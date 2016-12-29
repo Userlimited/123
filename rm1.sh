@@ -34,6 +34,6 @@ while [[ "$Usemem" > "$MEM" ]]
 case $1 in 
 start) do_start;;
 *)
-echo "Usage: $0 {start}"
+echo "Usage: $0 {start} $1 {TIME} $2 {MEMLIMIT}"
 exit 1 
 esac
