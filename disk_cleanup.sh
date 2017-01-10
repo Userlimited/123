@@ -4,35 +4,144 @@ DATADIR=/data/guacamole/ # the given folder
 #DATADIR=/home/ubuntu/doudoudou/ceshi/
 SIZE=100 # size (in GB) threshold to reach for the given folder before starting to delete files
 DAYSOLD=30 # delete files created number of days ago
+FLAG=1 #This flag is used to indicate whether the input is a reasonable input
+decimalPart=0
+fractionalPart=0
+flagint=0 #This flag is used to indicate whether the size input is an integer
+checkint(){
+	if [[ "$OPTARG" =~ ^[0-9]+$ ]] ; then
+		  echo "是整数"
+	else
+		  echo "不是整数"
+		  exit 1
+	fi
+}
+
+checkintd(){
+	if [[ "$OPTARG" =~ ^[0-9]+$ ]] ; then
+		  echo "是整数"
+	else
+#echo "不是整数"
+		  flagint=1
+		  return 1
+	fi
+}
+
+validint(){
+	if [[ ! "$1" =~ ^[0-9]+$ ]] ; then
+#	echo "是整数"
+#	else
+		echo "不是整数"
+		exit 1
+	fi
+}
+
+checkfloat(){
+	 fvalue="$OPTARG"
+		  if [ ! -z $(echo $fvalue | sed 's/[^.]//g') ] ; then
+			    decimalPart="$(echo $fvalue | cut -d. -f1)"
+				fractionalPart="$(echo $fvalue | cut -d. -f2)"
+				if [ ! -z $decimalPart ] ; then
+					if ! validint "$decimalPart" "" "" ; then
+						return 1
+					fi
+				fi
+				if [ "${fractionalPart%${fractionalPart#?}}" = "-" ] ; then
+					echo "Invalid floating-point number: '-' not allowed \
+					after decimal point" >&2
+					return 1
+				fi
+				if [ "$fractionalPart" != "" ] ; then
+					if ! validint "$fractionalPart" "0" "" ; then
+					return 1
+					fi
+				fi																				 
+				if [ "$decimalPart" = "-" -o -z "$decimalPart" ] ; then	
+					if [ -z $fractionalPart ] ; then
+						echo "Invalid floating-point format." >&2 ; return 1
+					fi
+				fi	
+				else
+					if [ "$fvalue" = "-" ] ; then
+						echo "Invalid floating-point format." >&2 ; return 1
+					fi
+					if ! validint "$fvalue" "" "" ; then
+						return 1
+					fi
+				fi
+				return 0
+}
+
+
 while getopts p:d:c:s: opt
 do
 	case ${opt} in
 		p)
-		DATADIR=$OPTARG
-		echo "datadir is $DATADIR"
+		if [ -d "$OPTARG" ]; then  
+			DATADIR=$OPTARG
+			echo "datadir is $DATADIR"
+		else
+			FLAG=0
+			echo "this path is not a correct path"
+		fi
 		;;
 		d)
-		DAYSOLD=$OPTARG
-		echo "daysold is $DAYSOLD"
+		checkint $OPTARG
+		if [ "$OPTARG" -gt 0 ]; then
+			DAYSOLD=$OPTARG
+			echo "daysold is $DAYSOLD"
+		else
+			FLAG=0
+			echo "error input"
+		fi
 		;;
 		c)
-		CAPACITY=$OPTARG
-		echo "capacity is $CAPACITY"
+		checkint $OPTARG
+		if [ "$OPTARG" -gt 0 ]&&[ "$OPTARG" -lt 100 ]; then
+			CAPACITY=$OPTARG
+			echo "capacity is $CAPACITY"
+		else
+			FLAG=0
+			echo "error input"
+		fi
 		;;
 		s)
-		SIZE=${OPTARG}
-		echo "size is $SIZE"
+		checkintd $OPTARG
+		if [ "$flagint" -eq 1 ]; then 
+			checkfloat $OPTARG
+				
+			if [ "$decimalPart" -gt 0 ]||[ "$fractionalPart" -gt 0 ]; then
+				SIZE=${OPTARG}
+				echo "size is $SIZE"
+			else
+				FLAG=0
+				echo "error input"
+			fi
+		else
+			if [ "$OPTARG" -gt 0 ];then
+				SIZE=${OPTARG}
+				echo "size is $SIZE"
+			else
+				FLAG=0
+				echo "error input"
+			fi
+		fi
 		;;
 		*)
+		FLAG=0
 		echo "USAGE [-p]:Set the path  [-d]: Set the number of days before [-c]:Set the capacity [-s]:Set the size"
 		;;
 	esac
 done
 
-#find $DATADIR -type f -mtime -$DAYSOLD -print
-
 # first delete files older than 30 days in DATADIR
-find $DATADIR -type f -mtime +$DAYSOLD -exec rm {} \;
+if [ $FLAG -eq 0 ]; then
+	echo "please enter the correct value"
+else
+#	find $DATADIR -type f -mtime -$DAYSOLD -print
+	find $DATADIR -type f -mtime +$DAYSOLD -exec rm {} \;
+fi
+
 # using [ instead of [[ for better error handling.
 if [ $(df -P $FILESYSTEM | awk '{ gsub("%",""); capacity = $5 }; END { print capacity }') -gt $CAPACITY ]
 then
