@@ -116,7 +116,7 @@ int main( void )
 	
 	pclose( stream );
 	fclose( wstream );
-/*
+
 	memset(str, 0, sizeof(str) );
 	memset(str1, 0, sizeof(str1));
 	fp = fopen("/home/ubuntu/doudoudou/pip/test_popen.txt","r");
@@ -125,7 +125,7 @@ int main( void )
 //		printf("NULL\n");
 //		exit(1);
 //	}
-	while (1)
+/*	while (1)
 	{
 		memset(str1, 0, sizeof(str1));
 

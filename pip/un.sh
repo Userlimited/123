@@ -1,4 +1,4 @@
 #!/bin/bash
 #/usr/bin/
 
-nmap 192.168.6.*
+sudo nmap 192.168.6.*
